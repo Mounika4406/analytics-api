@@ -40,7 +40,7 @@ def create_metric(metric: Metric, request: Request):
         raise HTTPException(
             status_code=429,
             detail="Too many requests",
-            headers={"Retry-After": str(retry)}
+            headers={"Retry-After": str(retry)}   # ✅ ADD HERE
         )
 
     metrics_db.append(metric)
@@ -48,7 +48,7 @@ def create_metric(metric: Metric, request: Request):
 
 # GET API with caching
 @router.get("/api/metrics/summary")
-def get_summary(type: str):
+def get_summary(type: str, period: str = "daily"):
 
     def compute():
         filtered = [m.value for m in metrics_db if m.type == type]
@@ -58,9 +58,12 @@ def get_summary(type: str):
 
         return {
             "type": type,
+            "period": period,   # ✅ ADD THIS
             "average": sum(filtered)/len(filtered),
             "count": len(filtered)
         }
+
+    return cache.get_or_set(f"summary:{type}:{period}", compute)
 
     return cache.get_or_set(f"summary:{type}", compute)
 @router.get("/api/external")
